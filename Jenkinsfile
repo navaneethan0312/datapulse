@@ -46,8 +46,8 @@ pipeline {
 
                             cd ${APP_DIR}
 
-                            docker compose down || true
-                            docker compose up -d --build
+                            sudo docker compose down || true
+                            sudo docker compose up -d --build
                         '
                     """
                 }
