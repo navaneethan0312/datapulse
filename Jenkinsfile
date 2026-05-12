@@ -5,7 +5,7 @@ pipeline {
         SERVER_IP = '13.126.110.36'
         SERVER_USER = 'ubuntu'
         APP_DIR = '/home/ubuntu/datapulse'
-    }=
+    }
 
     stages {
 
