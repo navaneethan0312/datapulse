@@ -30,14 +30,13 @@ pipeline {
         stage('Deploy to Remote Server') {
             steps {
                 sshagent(credentials: ['ssh-key']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} '
-                            mkdir -p ${APP_DIR}
-                        '
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} "
+                            mkdir -p ${APP_DIR}"
 
                         scp -o StrictHostKeyChecking=no -r * ${SERVER_USER}@${SERVER_IP}:${APP_DIR}
 
-                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} '
+                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} "
                             cd ${APP_DIR}
 
                             python3 -m venv venv || true
@@ -46,8 +45,8 @@ pipeline {
 
                             pkill -f "python3 app.py" || true
                             nohup venv/bin/python3 app.py > output.log 2>&1 &
-                        '
-                    '''
+                        "
+                    """
                 }
             }
         }
