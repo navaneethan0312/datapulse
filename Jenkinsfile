@@ -21,6 +21,22 @@ pipeline {
                 sshagent(credentials: ['ssh-key']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} '
+
+                            # Install Docker if not installed
+                            if ! command -v docker >/dev/null 2>&1; then
+                                sudo apt update -y
+                                sudo apt install docker.io docker-compose-v2 git -y
+                                sudo systemctl start docker
+                                sudo systemctl enable docker
+                                sudo usermod -aG docker ubuntu
+                            fi
+
+                            # Remove invalid folder if not a git repo
+                            if [ -d "${APP_DIR}" ] && [ ! -d "${APP_DIR}/.git" ]; then
+                                rm -rf ${APP_DIR}
+                            fi
+
+                            # Clone or pull latest code
                             if [ ! -d "${APP_DIR}" ]; then
                                 git clone https://github.com/navaneethan0312/datapulse.git ${APP_DIR}
                             else
@@ -43,6 +59,7 @@ pipeline {
         success {
             echo 'Deployment Successful'
         }
+
         failure {
             echo 'Deployment Failed'
         }
