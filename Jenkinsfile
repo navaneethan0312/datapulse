@@ -18,7 +18,7 @@ pipeline {
 
         stage('Deploy to Remote Server') {
             steps {
-                sshagent(credentials: ['ec2-key']) {
+                sshagent(credentials: ['ssh-key']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} '
                             if [ ! -d "${APP_DIR}" ]; then
