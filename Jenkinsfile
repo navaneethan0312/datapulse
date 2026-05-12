@@ -45,6 +45,7 @@ pipeline {
                             fi
 
                             cd ${APP_DIR}
+                            chmod +x entrypoint.sh
 
                             sudo docker compose down || true
                             sudo docker compose up -d --build
