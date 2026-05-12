@@ -12,50 +12,39 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 git branch: 'main',
-                url: 'https://github.com/navaneethan0312/datapulse.git'
+                    url: 'https://github.com/navaneethan0312/datapulse.git'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Deploy to Remote Server') {
             steps {
-                sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                '''
+                sshagent(credentials: ['ec2-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} '
+                            if [ ! -d "${APP_DIR}" ]; then
+                                git clone https://github.com/navaneethan0312/datapulse.git ${APP_DIR}
+                            else
+                                cd ${APP_DIR}
+                                git pull origin main
+                            fi
+
+                            cd ${APP_DIR}
+
+                            docker compose down || true
+                            docker compose up -d --build
+                        '
+                    """
+                }
             }
-        }
-
-    stage('Deploy to Remote Server') {
-    steps {
-        sshagent(credentials: ['shh-key']) {
-            sh """
-                ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} '
-                    if [ ! -d "${APP_DIR}" ]; then
-                        git clone https://github.com/navaneethan0312/datapulse.git ${APP_DIR}
-                    else
-                        cd ${APP_DIR}
-                        git pull origin main
-                    fi
-
-                    cd ${APP_DIR}
-
-                    docker compose down || true
-                    docker compose up -d --build
-                '
-            """
         }
     }
-}
 
     post {
         success {
-            echo 'Deployment completed successfully'
+            echo 'Deployment Successful'
         }
-
         failure {
-            echo 'Deployment failed'
+            echo 'Deployment Failed'
         }
     }
 }
