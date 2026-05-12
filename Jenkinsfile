@@ -43,8 +43,13 @@ pipeline {
                             . venv/bin/activate
                             pip install -r requirements.txt
 
-                            pkill -f "python3 app.py" || true
-                            nohup venv/bin/python3 app.py > output.log 2>&1 &
+                            python mange.py collectstatic --noinput || true
+                            python mange.py migrate || true
+
+                            pkill -f gunicorn || true
+
+                            nohup ${APP_DIR}/${VENV}/bin/gunicorn datapulse.wsgi:application \
+                            --bind 0.0.0.0:8000 > output.log 2>&1 &
                         "
                     """
                 }
