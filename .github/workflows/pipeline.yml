@@ -70,7 +70,7 @@ jobs:
   sonarqube:
     name: SonarQube Stage
     needs: test
-    runs-on: ubuntu-lastest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Source
