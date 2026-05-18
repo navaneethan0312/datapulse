@@ -1,0 +1,161 @@
+name: DataPulse CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+
+jobs:
+
+  lint:
+    name: Lint Stage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Backend Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Backend Lint
+        run: |
+          pip install flake8
+          flake8 .
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Frontend Lint
+        working-directory: frontend
+        run: npm run lint --if-present
+
+
+  test:
+    name: Test Stage
+    needs: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Backend Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Django Tests
+        run: python manage.py test
+
+
+  sonarqube:
+    name: SonarQube Stage
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+
+  build-frontend:
+    name: Build Frontend
+    needs: sonarqube
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Build Angular Frontend
+        working-directory: frontend
+        run: npm run build
+
+
+  build-backend:
+    name: Build Backend
+    needs: build-frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Build Backend Docker Image
+        run: docker build -t datapulse-backend .
+
+
+  deploy-staging:
+    name: Deploy Staging
+    needs: build-backend
+    runs-on: [self-hosted, Linux, X64, devops-runner]
+
+    steps:
+      - name: Deploy to Staging
+        run: |
+          cd /home/ubuntu/datapulse
+          git pull origin main
+          docker compose down
+          docker compose up -d --build
+
+      - name: Health Check Staging
+        run: |
+          sleep 30
+          curl http://localhost:8000
+
+
+  deploy-production:
+    name: Deploy Production
+    needs: deploy-staging
+    runs-on: [self-hosted, Linux, X64, devops-runner]
+    environment:
+      name: production
+
+    steps:
+      - name: Deploy to Production
+        run: |
+          cd /home/ubuntu/datapulse
+          git pull origin main
+          docker compose down
+          docker compose up -d --build
+
+      - name: Health Check Production
+        run: |
+          sleep 30
+          curl http://localhost:8000
