@@ -81,8 +81,8 @@ jobs:
       - name: Install SonarScanner
         uses: sonarsource/sonarqube-scan-action@v3
         env:
-          SONAR_TOKEN: ${{ secrets.SONNAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONNAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: SonarQube Scan
         run: |
